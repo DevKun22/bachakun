@@ -1,0 +1,119 @@
+@import "tailwindcss";
+
+@layer base {
+  body {
+    font-family: 'Be Vietnam Pro', -apple-system, BlinkMacSystemFont, sans-serif;
+  }
+}
+
+.font-handwriting {
+  font-family: 'Dancing Script', cursive;
+}
+
+.font-script {
+  font-family: 'Alex Brush', cursive;
+}
+
+.font-serif-romantic {
+  font-family: 'Playfair Display', Georgia, serif;
+}
+
+/* Custom scrollbar */
+::-webkit-scrollbar {
+  width: 8px;
+}
+::-webkit-scrollbar-track {
+  background: #fff1f2;
+}
+::-webkit-scrollbar-thumb {
+  background: #fda4af;
+  border-radius: 9999px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #fb7185;
+}
+
+@keyframes gentle-float {
+  0%, 100% {
+    transform: translateY(0px) rotate(0deg);
+  }
+  50% {
+    transform: translateY(-8px) rotate(1.5deg);
+  }
+}
+
+@keyframes pulse-glow {
+  0%, 100% {
+    box-shadow: 0 0 20px rgba(244, 63, 94, 0.4), 0 0 40px rgba(251, 113, 133, 0.2);
+  }
+  50% {
+    box-shadow: 0 0 35px rgba(244, 63, 94, 0.7), 0 0 60px rgba(251, 113, 133, 0.4);
+  }
+}
+
+@keyframes memory-float-1 {
+  0%, 100% {
+    transform: translateY(0px) rotate(var(--rot, -3deg));
+  }
+  50% {
+    transform: translateY(-16px) rotate(calc(var(--rot, -3deg) + 2deg));
+  }
+}
+
+@keyframes memory-float-2 {
+  0%, 100% {
+    transform: translateY(0px) rotate(var(--rot, 3deg));
+  }
+  50% {
+    transform: translateY(-22px) rotate(calc(var(--rot, 3deg) - 2.5deg));
+  }
+}
+
+@keyframes memory-float-3 {
+  0%, 100% {
+    transform: translateY(0px) scale(1) rotate(var(--rot, 0deg));
+  }
+  50% {
+    transform: translateY(-14px) scale(1.02) rotate(calc(var(--rot, 0deg) + 1.5deg));
+  }
+}
+
+@keyframes heart-bloom {
+  0% {
+    transform: scale(0.15) translateY(90px) rotate(0deg);
+    opacity: 0;
+  }
+  65% {
+    transform: scale(1.1) translateY(-14px) rotate(calc(var(--rot, 0deg) * 1.15));
+    opacity: 0.95;
+  }
+  100% {
+    transform: scale(1) translateY(0px) rotate(var(--rot, 0deg));
+    opacity: 1;
+  }
+}
+
+.animate-heart-bloom {
+  animation: heart-bloom 0.9s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+}
+
+.animate-float {
+  animation: gentle-float 4s ease-in-out infinite;
+}
+
+.animate-pulse-glow {
+  animation: pulse-glow 2.5s ease-in-out infinite;
+}
+
+.animate-memory-1 {
+  animation: memory-float-1 5.5s ease-in-out infinite;
+}
+
+.animate-memory-2 {
+  animation: memory-float-2 7s ease-in-out infinite;
+}
+
+.animate-memory-3 {
+  animation: memory-float-3 6.2s ease-in-out infinite;
+}
+
