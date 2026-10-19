@@ -149,7 +149,7 @@ export default function App() {
           <Heart size={13} className="fill-rose-500 text-rose-500" />
         </div>
         <p className="font-light text-[11px]">
-          Bắp dành tặng {config.girlfriendName}
+          Anh dành tặng {config.girlfriendName}
         </p>
       </footer>
 

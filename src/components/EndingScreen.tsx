@@ -32,7 +32,7 @@ export const EndingScreen: React.FC<EndingScreenProps> = ({ imageUrl }) => {
             className="aspect-[3/4] w-full rounded-xl object-cover"
           />
           <figcaption className="mt-4 text-center text-sm font-semibold text-rose-600">
-            Hoa có chủ rồi nha, anh Bắp nhận trông coi! 🌷❤️
+            Bông Hoa đẹp nhất của Tui! 🌷❤️
           </figcaption>
         </figure>
       )}

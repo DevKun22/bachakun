@@ -28,7 +28,7 @@ export const MemoryTimeline: React.FC<{ archived?: boolean }> = ({
       <div className="mx-auto my-5 max-w-xl rounded-3xl border border-rose-200 bg-white/90 px-5 py-5 text-center shadow-lg shadow-rose-100">
         <Heart size={22} className="mx-auto mb-2 text-rose-500" />
         <p className="font-bold text-rose-600">
-          Chibi cất lá thư vào hộp kỷ niệm rồi nè 💌
+          Chibi cất vào hộp kỷ niệm rồi Dợ ơi! 💌
         </p>
         <p className="mt-2 text-sm text-slate-600">
           Kỷ niệm vẫn ở đây. Hẹn anh và Em ở những ngày vui sắp tới nha! ❤️

@@ -4,13 +4,13 @@ import { WebsiteConfig } from "../types";
 // ISO YYYY-MM-DD được dùng để input type="date" hoạt động chính xác.
 export const DEFAULT_CONFIG: WebsiteConfig = {
   girlfriendName: "Bà Chã",
-  boyfriendName: "Bông Hoa Sữa",
+  boyfriendName: "Bắp Em",
   nickname: "Bà Chã",
   anniversaryDate: "2026-01-08",
   anniversaryHint: "Tháng đầu năm ngày thứ 8 - anh và em vớ nhau ❤️",
   heroSubtitle:
     "Xa nhau một chút thôi, còn thương em thì anh thương hơn mỗi ngày.",
-  letterTitle: "20/10 — Gửi Bà Chã Của Anh 💌",
+  letterTitle: "20/10 — Gửi Bà Chã Anh 💌",
   letterGreeting: "Gửi Em, Tình Yêu Của Anh,",
 
   letterContent: [
