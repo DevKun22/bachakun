@@ -161,7 +161,7 @@ export const IntroHero: React.FC<IntroHeroProps> = ({
         {!answeredLove ? (
           <div>
             <p className="text-sm sm:text-base font-bold text-slate-800 mb-3 flex items-center justify-center gap-1.5">
-              <span>Em có thương anh hong?</span>
+              <span>Em có Yêu anh hơm nà?</span>
               <Heart size={16} className="fill-rose-500 text-rose-500 animate-pulse" />
             </p>
 
@@ -225,7 +225,7 @@ export const IntroHero: React.FC<IntroHeroProps> = ({
             {answeredLove ? (isUnlocked ? 'Thư Đã Mở Khóa ✨' : 'Thư gửi Bà Chã 💌') : 'Chờ em trả lời Chibi 💗'}
           </span>
           <span className="text-[11px] text-slate-500 font-light mt-0.5">
-            {!answeredLove ? 'Yêu ơi là yêu trước nha' : isUnlocked ? 'Bấm để đọc thư' : 'Chạm vào để mở thư'}
+            {!answeredLove ? 'Yêu Anh Bắp ạ!' : isUnlocked ? 'Bấm để đọc thư' : 'Chạm vào để mở thư'}
           </span>
         </div>
       </div>
