@@ -1,12 +1,13 @@
 import React, { useEffect } from "react";
 import confetti from "canvas-confetti";
-import { Heart, Gift } from "lucide-react";
+import { Heart, Gift, Flower2 } from "lucide-react";
 import { MemoryTimeline } from "./MemoryTimeline";
 interface EndingScreenProps {
   imageUrl: string | null;
+  onOpenMemories?: () => void;
 }
 
-export const EndingScreen: React.FC<EndingScreenProps> = ({ imageUrl }) => {
+export const EndingScreen: React.FC<EndingScreenProps> = ({ imageUrl, onOpenMemories }) => {
   useEffect(() => {
     confetti({
       particleCount: 110,
@@ -42,6 +43,9 @@ export const EndingScreen: React.FC<EndingScreenProps> = ({ imageUrl }) => {
         </p>
       )}
       <MemoryTimeline />
+      {onOpenMemories && <button type="button" onClick={onOpenMemories} className="mt-4 inline-flex items-center gap-2 rounded-full bg-gradient-to-r from-rose-500 to-pink-500 px-6 py-3 text-sm font-semibold text-white shadow-lg shadow-rose-200 hover:scale-[1.03] transition-transform">
+        <Flower2 size={18}/> Mở góc kỷ niệm của mình 💗
+      </button>}
       <p className="text-sm text-rose-600 mt-6 flex items-center justify-center gap-2">
         <Heart size={16} /> Anh yêu Em! <Heart size={16} />
       </p>

@@ -9,8 +9,13 @@ import { DEFAULT_CONFIG } from './data/defaultConfig';
 import { WebsiteConfig } from './types';
 import { Heart } from 'lucide-react';
 import { recordMoment } from './lib/moments';
-import { MemoryTimeline } from './components/MemoryTimeline';
+import { MemoryArchive } from './components/MemoryArchive';
+import { DISPLAY_SETTINGS } from './data/displaySettings';
 import { EndingScreen } from './components/EndingScreen';
+import { PetalTransition } from './components/PetalTransition';
+import { MemoryLogin } from './components/MemoryLogin';
+import { MemoryRoleGate } from './components/MemoryRoleGate';
+type MemoryRole = 'anh' | 'em';
 
 export type ScreenStep = 'intro' | 'letter' | 'gift' | 'ending';
 
@@ -33,11 +38,69 @@ export default function App() {
   });
 
   // 20/10/2026 runs through 23:59:59 in Viet Nam (UTC+7).
-  const [isArchived, setIsArchived] = React.useState(() => Date.now() >= Date.parse('2026-10-21T00:00:00+07:00'));
+  const [isArchived, setIsArchived] = React.useState(() => Date.now() >= Date.parse(DISPLAY_SETTINGS.giftEndAt));
+  const wasArchived = React.useRef(isArchived);
   React.useEffect(() => {
-    const timer = window.setInterval(() => setIsArchived(Date.now() >= Date.parse('2026-10-21T00:00:00+07:00')), 1000);
+    const timer = window.setInterval(() => setIsArchived(Date.now() >= Date.parse(DISPLAY_SETTINGS.giftEndAt)), 1000);
     return () => window.clearInterval(timer);
   }, []);
+
+  const showMemories = DISPLAY_SETTINGS.mode === 'memories' || (DISPLAY_SETTINGS.mode === 'auto' && isArchived);
+  const [transitioning, setTransitioning] = React.useState(false);
+  const [enteringMemories, setEnteringMemories] = React.useState(false);
+  const hasPassedGiftEnd = Date.now() >= Date.parse(DISPLAY_SETTINGS.giftEndAt);
+  const beginArchiveTransition = React.useCallback(() => {
+    if (DISPLAY_SETTINGS.mode === 'gift' || hasPassedGiftEnd || transitioning) return;
+    setTransitioning(true);
+    window.setTimeout(() => { setEnteringMemories(true); setTransitioning(false); window.scrollTo({ top: 0, behavior: 'instant' }); }, 1600);
+  }, [hasPassedGiftEnd, transitioning]);
+  const archiveVisible = showMemories || enteringMemories;
+  const [authState, setAuthState] = React.useState<'checking' | 'locked' | 'unlocked'>('checking');
+  const [memoryRole, setMemoryRole] = React.useState<MemoryRole | null>(null);
+  const [roleChecking, setRoleChecking] = React.useState(true);
+  const [logoutStatus, setLogoutStatus] = React.useState<'idle' | 'locking' | 'success'>('idle');
+  const [logoutError, setLogoutError] = React.useState('');
+  React.useEffect(() => {
+    if (!archiveVisible) return;
+    let active = true;
+    fetch('/api/memory-auth', { credentials: 'same-origin', cache: 'no-store' })
+      .then(r => r.ok ? r.json() : { authenticated: false })
+      .then(async v => { if (!active) return; setAuthState(v.authenticated ? 'unlocked' : 'locked'); if(v.authenticated){try { const r=await fetch('/api/memory-role',{credentials:'same-origin',cache:'no-store'}); const d=await r.json(); if(active)setMemoryRole(d.role==='anh'||d.role==='em'?d.role:null); }catch{if(active)setMemoryRole(null);} } if(active)setRoleChecking(false); })
+      .catch(() => { if(active){setAuthState('locked');setRoleChecking(false);} });
+    return () => { active = false; };
+  }, [archiveVisible]);
+  const logoutMemory = async () => {
+    if (logoutStatus !== 'idle') return;
+    setLogoutStatus('locking');
+    setLogoutError('');
+    try {
+      const response = await fetch('/api/memory-auth', {
+        method: 'DELETE',
+        credentials: 'same-origin',
+      });
+      if (!response.ok) throw new Error('Đăng xuất thất bại');
+      setLogoutStatus('success');
+      // Cho Chibi kịp báo đã khóa rồi mới trở về màn nhập mật khẩu.
+      window.setTimeout(() => {
+        setAuthState('locked');
+        setMemoryRole(null);
+        sessionStorage.removeItem('bk_archive_visit_v66');
+        setLogoutStatus('idle');
+      }, 650);
+    } catch {
+      setLogoutError('Chibi chưa khóa được, thử lại nha 🥺');
+      setLogoutStatus('idle');
+    }
+  };
+  React.useEffect(() => {
+    if (!wasArchived.current && isArchived && currentStep === 'ending' && DISPLAY_SETTINGS.mode === 'auto') {
+      setTransitioning(true);
+      const timeout = window.setTimeout(() => setTransitioning(false), 1600);
+      wasArchived.current = true;
+      return () => window.clearTimeout(timeout);
+    }
+    wasArchived.current = isArchived;
+  }, [isArchived, currentStep]);
 
   const [isPasswordModalOpen, setIsPasswordModalOpen] = useState<boolean>(false);
   const [isPhotoModalOpen, setIsPhotoModalOpen] = useState<boolean>(false);
@@ -83,10 +146,31 @@ export default function App() {
 
 
 
-      {isArchived ? (
-        <main className="relative z-20 flex-1 flex items-center justify-center p-6">
-          <MemoryTimeline archived />
-        </main>
+      {transitioning && <PetalTransition />}
+      {archiveVisible ? (
+        authState === 'checking' ? <main className="relative z-20 flex min-h-screen items-center justify-center text-rose-500">Chibi đang kiểm tra chìa khóa... 💌</main> : authState === 'locked' ? <MemoryLogin onSuccess={() => {setMemoryRole(null);sessionStorage.removeItem('bk_archive_visit_v66');setAuthState('unlocked');setRoleChecking(false);}} /> : roleChecking ? <main className="relative z-20 min-h-screen flex items-center justify-center">Chibi đang kiểm tra sổ... 💌</main> : !memoryRole ? <MemoryRoleGate onSelected={setMemoryRole}/> : (
+          <div className="relative z-20">
+            <div className="absolute right-4 top-2 z-30 flex flex-col items-end gap-2">
+              <button
+                type="button"
+                onClick={logoutMemory}
+                disabled={logoutStatus !== 'idle'}
+                aria-busy={logoutStatus === 'locking'}
+                className="flex items-center gap-2 rounded-full border border-rose-200 bg-white/95 px-4 py-2 text-xs font-semibold text-rose-600 shadow-sm disabled:cursor-wait disabled:opacity-75"
+              >
+                {logoutStatus === 'locking' ? (
+                  <><span aria-hidden="true" className="h-3.5 w-3.5 animate-spin rounded-full border-2 border-rose-200 border-t-rose-600" /> Chibi đang cất chìa khóa...</>
+                ) : logoutStatus === 'success' ? (
+                  '💗 Chibi khóa cửa rồi nha!'
+                ) : (
+                  '🔒 Khóa góc nhỏ'
+                )}
+              </button>
+              {logoutError && <p role="alert" className="max-w-xs rounded-xl bg-white/95 px-3 py-2 text-xs text-red-600 shadow-sm">{logoutError}</p>}
+            </div>
+            <MemoryArchive role={memoryRole} />
+          </div>
+        )
       ) : (
       <>
       {/* Screen Container: Only active screen is shown, previous screen is hidden */}
@@ -114,7 +198,7 @@ export default function App() {
           </div>
         )}
 
-        {currentStep === 'ending' && <EndingScreen imageUrl={endingImageUrl} />}
+        {currentStep === 'ending' && <EndingScreen imageUrl={endingImageUrl} onOpenMemories={DISPLAY_SETTINGS.showMemoriesButtonInEnding ? beginArchiveTransition : undefined} />}
 
         {/* SCREEN 3: Hộp Quà 20/10 & Phản Hồi Lời Nhắn */}
         {currentStep === 'gift' && (
@@ -142,7 +226,7 @@ export default function App() {
       </>
       )}
       {/* Footer */}
-      <footer className="relative z-20 py-4 px-4 text-center border-t border-rose-200/60 bg-white/40 backdrop-blur-xs text-xs text-slate-500">
+      {!archiveVisible && <footer className="relative z-20 py-4 px-4 text-center border-t border-rose-200/60 bg-white/40 backdrop-blur-xs text-xs text-slate-500">
         <div className="flex items-center justify-center gap-1.5 text-rose-600 font-medium mb-0.5">
           <Heart size={13} className="fill-rose-500 text-rose-500" />
           <span>Chúc mừng ngày Phụ Nữ Việt Nam 20/10</span>
@@ -151,7 +235,7 @@ export default function App() {
         <p className="font-light text-[11px]">
           Anh dành tặng {config.girlfriendName}
         </p>
-      </footer>
+      </footer>}
 
       {/* Password Gate Modal */}
       <PasswordGateModal
