@@ -1,22 +1,22 @@
-/** Uploads a selected photo to Cloudinary using an unsigned upload preset. */
-export async function uploadPhoto(file: File): Promise<string> {
-  const cloudName = import.meta.env.VITE_CLOUDINARY_CLOUD_NAME;
-  const preset = import.meta.env.VITE_CLOUDINARY_UPLOAD_PRESET;
-  if (!cloudName || !preset) throw new Error('Bắp chưa cấu hình Cloudinary.');
-  if (!['image/jpeg', 'image/png', 'image/webp'].includes(file.type)) {
-    throw new Error('Chỉ chọn ảnh JPG, PNG hoặc WebP nha.');
+/** Upload signed by an authenticated Vercel API. The API secret never reaches browser. */
+export async function uploadPhoto(file: File, purpose: 'memory' | 'gift' = 'memory'): Promise<string> {
+  if (!['image/jpeg', 'image/png', 'image/webp'].includes(file.type) || file.size > 5 * 1024 * 1024) {
+    throw new Error('Chỉ chọn JPG, PNG, WebP và không quá 5 MB mỗi ảnh nha.');
   }
-  if (file.size > 5 * 1024 * 1024) throw new Error('Ảnh phải nhỏ hơn 5 MB nha.');
-  const form = new FormData();
-  form.append('file', file);
-  form.append('upload_preset', preset);
-  const response = await fetch(`https://api.cloudinary.com/v1_1/${encodeURIComponent(cloudName)}/image/upload`, {
-    method: 'POST', body: form,
+  const signatureRes = await fetch(purpose === 'gift' ? '/api/gift-upload' : '/api/memory-upload', {
+    method: 'POST', headers: { 'Content-Type': 'application/json' }, credentials: 'same-origin', body: '{}',
   });
-  if (!response.ok) throw new Error('Không tải được ảnh lên Cloudinary. em thử lại nha!');
-  const data: { secure_url?: string; resource_type?: string } = await response.json();
-  if (!data.secure_url?.startsWith('https://res.cloudinary.com/') || data.resource_type !== 'image') {
-    throw new Error('Cloudinary trả về ảnh không hợp lệ.');
-  }
-  return data.secure_url;
+  if (!signatureRes.ok) throw new Error(signatureRes.status === 401 ? (purpose === 'gift' ? 'Em cần xác nhận quyền gửi thư trước.' : 'Em cần mở khóa Góc kỷ niệm trước.') : 'Chưa thể chuẩn bị tải ảnh.');
+  const { cloudName, apiKey, folder, timestamp, signature } = await signatureRes.json() as {cloudName:string;apiKey:string;folder:string;timestamp:number;signature:string};
+  const data = new FormData();
+  data.append('file', file);
+  data.append('api_key', apiKey);
+  data.append('timestamp', String(timestamp));
+  data.append('folder', folder);
+  data.append('signature', signature);
+  const response = await fetch(`https://api.cloudinary.com/v1_1/${encodeURIComponent(cloudName)}/image/upload`, { method: 'POST', body: data });
+  if (!response.ok) throw new Error('Cloudinary chưa nhận được ảnh. Em thử lại nha.');
+  const payload = await response.json() as {secure_url?:string;resource_type?:string};
+  if (!payload.secure_url?.startsWith(`https://res.cloudinary.com/${cloudName}/`) || payload.resource_type !== 'image') throw new Error('Đường dẫn ảnh không hợp lệ.');
+  return payload.secure_url;
 }

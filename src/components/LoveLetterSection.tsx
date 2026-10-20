@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from "react";
 import confetti from "canvas-confetti";
+import { shootPhotoHearts } from "../lib/heartBurst";
 import {
   Heart,
   Sparkles,
@@ -94,12 +95,7 @@ export const LoveLetterSection: React.FC<LoveLetterSectionProps> = ({
   // Re-trigger the heart rising animation
   const handleTriggerHeartBurst = () => {
     setBloomKey((prev) => prev + 1);
-    confetti({
-      particleCount: 50,
-      spread: 70,
-      origin: { y: 0.6 },
-      colors: ["#f43f5e", "#ec4899", "#fda4af"],
-    });
+    shootPhotoHearts();
   };
 
   // Heart formation coordinates around the letter container

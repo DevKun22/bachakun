@@ -117,3 +117,65 @@
   animation: memory-float-3 6.2s ease-in-out infinite;
 }
 
+
+/* Kỷ niệm: scrapbook mềm, chuyển cánh hoa và tôn trọng giảm chuyển động. */
+@keyframes memory-petal-fall { from { transform: translateY(-18vh) rotate(-25deg); opacity: 0 } 18% { opacity: .95 } to { transform: translateY(112vh) translateX(60px) rotate(240deg); opacity: 0 } }
+@keyframes memory-soft-glow { 0% { opacity: 0 } 35% { opacity: 1 } 100% { opacity: .15 } }
+@keyframes memory-rise { from { opacity: 0; transform: translateY(16px) } to { opacity: 1; transform: translateY(0) } }
+.memory-transition-petal { position: absolute; top: -12%; font-size: 24px; animation: memory-petal-fall 1.65s ease-in forwards; pointer-events: none; }
+.memory-transition-glow { background: radial-gradient(circle, rgba(255,255,255,.98) 0%,rgba(255,208,221,.42) 57%,rgba(255,242,244,.88) 100%); animation: memory-soft-glow 1.6s ease both; }
+.memory-reveal { animation: memory-rise .8s ease both }
+.memory-card-enter { animation: memory-rise .65s ease both }
+.memory-scrapbook { background-image: radial-gradient(circle at 15% 12%, #ffe6eb 0, transparent 30%), radial-gradient(circle at 90% 75%, #fff1da 0, transparent 40%); }
+@media(prefers-reduced-motion:reduce) { .memory-transition-petal,.memory-transition-glow,.memory-reveal,.memory-card-enter { animation: none !important } }
+
+
+/* V6.3 · Trái tim nở hoa, không chờ mạng. */
+@keyframes bk-heart-pop { 0%{transform:scale(1)} 28%{transform:scale(.7)} 56%{transform:scale(1.55) rotate(-12deg)} 78%{transform:scale(.94)} 100%{transform:scale(1)} }
+.bk-heart-pop { animation:bk-heart-pop .48s cubic-bezier(.2,.9,.25,1) both; transform-origin:center; }
+@keyframes bk-heart-fly { 0%{opacity:0;transform:translate(-50%,0) scale(.25) rotate(0)} 22%{opacity:1} 100%{opacity:0;transform:translate(calc(-50% + var(--dx)),var(--dy)) scale(1.25) rotate(var(--rot))} }
+.bk-heart-particles { position:absolute;left:50%;top:32%;pointer-events:none;z-index:7; }
+.bk-heart-particles span { --dx:calc((var(--i) - 3) * 17px);--dy:calc(-42px - var(--i) * 5px);--rot:calc((var(--i) - 3) * 17deg);position:absolute;left:0;top:0;font-size:15px;white-space:nowrap;animation:bk-heart-fly .85s ease-out both;animation-delay:calc(var(--i) * 32ms); }
+@keyframes bk-photo-kiss { 0%,100%{transform:translateY(0) rotate(0)} 34%{transform:translateY(-5px) rotate(-3deg)} 65%{transform:translateY(-2px) rotate(2deg)} }
+.bk-polaroid-love { animation:bk-photo-kiss .52s ease-out; }
+@keyframes bk-duet-show { 0%{opacity:0;transform:scale(.5) rotate(-7deg)} 55%{opacity:1;transform:scale(1.06) rotate(2deg)} 100%{opacity:1;transform:scale(1)} }
+@keyframes bk-duet-backdrop { from{opacity:0} to{opacity:1} }
+.bk-duet-overlay { background:radial-gradient(circle,rgba(251,207,232,.32),transparent 65%);animation:bk-duet-backdrop .4s ease-out both; }
+.bk-duet-card { animation:bk-duet-show .64s cubic-bezier(.2,1.3,.28,1) both; }
+.bk-duet-hearts { display:flex;justify-content:center;align-items:center;gap:12px;font-size:2.5rem; }
+.bk-duet-hearts span:first-child{animation:bk-photo-kiss .8s ease-in-out both}
+.bk-duet-hearts span:last-child{animation:bk-photo-kiss .8s ease-in-out .12s both}
+.bk-duet-stamp {position:absolute;bottom:calc(100% + 8px);left:50%;transform:translateX(-50%);z-index:9;white-space:nowrap;border-radius:999px;background:#fff1f2;color:#be185d;padding:5px 9px;font-size:11px;box-shadow:0 4px 14px #fda4af70;animation:bk-duet-show .55s both;}
+@media(prefers-reduced-motion:reduce){.bk-heart-pop,.bk-heart-particles span,.bk-polaroid-love,.bk-duet-card,.bk-duet-overlay,.bk-duet-hearts span,.bk-duet-stamp{animation:none!important}.bk-heart-particles{display:none}}
+
+/* V6.5: con dấu nằm trên album, có thể mở lại bất kỳ lúc nào. */
+.bk-stamp-badge{display:inline-flex;align-items:center;gap:.25rem;padding:.35rem .55rem;border:1px solid #f9a8d4;border-radius:999px;background:#fff1f2;color:#be185d;font-size:10px;font-weight:700;box-shadow:0 3px 12px #fda4af55;cursor:pointer;max-width:230px;white-space:normal;text-align:center;transition:transform .2s}
+.bk-stamp-badge:hover{transform:scale(1.045) rotate(-2deg)}
+.bk-forever-seal{animation:bkSealDrop .9s cubic-bezier(.2,1.35,.35,1) both}
+@keyframes bkSealDrop{0%{opacity:0;transform:translateY(-90px) rotate(-18deg) scale(1.5)}70%{opacity:1;transform:translateY(4px) rotate(5deg) scale(.94)}100%{transform:translateY(0) rotate(-7deg) scale(1)}}
+@media(prefers-reduced-motion:reduce){.bk-forever-seal{animation:none}.bk-stamp-badge{transition:none}}
+
+/* V6.7: smaller screens, thumb-friendly controls, reduced motion. */
+.memory-scrapbook { padding-bottom: max(6rem, env(safe-area-inset-bottom)); }
+.bk-photo-stamp { transform: rotate(8deg); transition: transform .2s ease, box-shadow .2s ease; }
+.bk-photo-stamp:hover { transform: rotate(0deg) scale(1.05); box-shadow: 0 6px 22px rgba(225,29,72,.22); }
+.bk-chibi-widget { padding-bottom: env(safe-area-inset-bottom); }
+.bk-heart-wrap .bk-stamp-badge { max-width: 100%; white-space: normal; }
+@media (max-width: 639px) {
+  .memory-scrapbook { padding-left: 12px; padding-right: 12px; padding-top: 64px; }
+  .bk-duet-card { max-height: calc(100dvh - 36px); overflow-y: auto; }
+  .bk-stamp-badge { line-height: 1.2; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .memory-card-enter, .bk-heart-pop, .bk-polaroid-love, .bk-duet-overlay *, .bk-heart-particles * { animation: none !important; transition-duration: .01ms !important; }
+}
+
+/* V6.8: bắn tim đồng nhất với Thư; lớp phủ không chặn thao tác. */
+@keyframes bk-photo-bloom-fly {
+  0% { opacity:0; transform:translate(-50%, 24px) scale(.45) rotate(-12deg); }
+  18% {opacity:1}
+  100% {opacity:0; transform:translate(calc(-50% + var(--burst-dx)), -175px) scale(1.35) rotate(30deg);}
+}
+.bk-photo-bloom span { position:absolute; left:50%; top:65%; font-size:clamp(20px,4vw,34px); animation:bk-photo-bloom-fly 1.45s ease-out both; animation-delay:calc(var(--burst-index) * 65ms); }
+@media (max-width:640px) { .bk-photo-bloom span { top:47%; } }
+@media (prefers-reduced-motion:reduce) { .bk-photo-bloom {display:none} }

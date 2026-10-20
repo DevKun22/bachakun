@@ -16,7 +16,6 @@ import {
   Smile,
 } from 'lucide-react';
 import { WebsiteConfig, LoveReply } from '../types';
-import { supabase } from '../lib/supabase';
 import { uploadPhoto } from '../lib/cloudinary';
 import { getSessionId, recordLoveEvent } from '../lib/events';
 
@@ -54,10 +53,25 @@ export const GiftAndReplySection: React.FC<GiftAndReplySectionProps> = ({
   const [replies, setReplies] = useState<LoveReply[]>([]);
   const [justSent, setJustSent] = useState<boolean>(false);
   const [isSending, setIsSending] = useState(false);
+  type SendStage = 'idle' | 'checking' | 'needs-auth' | 'authorizing' | 'uploading' | 'saving' | 'success';
+  const [sendStage, setSendStage] = useState<SendStage>('idle');
+  const sendStageText: Record<SendStage, string> = {
+    idle: 'Gửi lời nhắn cho anh 💌',
+    checking: 'Chibi đang kiểm tra chìa khóa... 🔐',
+    'needs-auth': 'Chibi chờ Em xác nhận mật mã 💗',
+    authorizing: 'Chibi đang xác nhận mật mã... 🔐',
+    uploading: 'Chibi đang gửi ảnh của Em... 📸',
+    saving: 'Chibi đang cất lời nhắn... 💌',
+    success: 'Bắp nhận được lời nhắn rồi! 💗',
+  };
   const [sendError, setSendError] = useState('');
   const [hasCompleted, setHasCompleted] = useState<boolean>(false);
   const [uploadedImageUrl, setUploadedImageUrl] = useState<string | null>(null);
   const [submissionId] = useState(() => crypto.randomUUID());
+  const [showGiftAuth, setShowGiftAuth] = useState(false);
+  const [giftPassword, setGiftPassword] = useState('');
+  const [authError, setAuthError] = useState('');
+  const [authorizing, setAuthorizing] = useState(false);
 
   // Load saved replies from localStorage
   useEffect(() => {
@@ -120,44 +134,98 @@ export const GiftAndReplySection: React.FC<GiftAndReplySectionProps> = ({
     setPhotoCaption(config.photos[nextIndex].caption || 'Ảnh bà chã gửi anh ❤️');
   };
 
+  // A verified Gift Session is independent from the Memory Session.
+  // Keep the form and selected photo intact while asking for permission.
   const handleSaveReply = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!replyMessage.trim() || isSending) return;
+    if (!replyMessage.trim() || isSending || sendStage === 'checking' || sendStage === 'authorizing') return;
     setSendError('');
-    if (!supabase) {
-      setSendError('Chưa kết nối Supabase. Bắp cần cấu hình .env.local trước nha!');
-      return;
+    setSendStage('checking');
+    try {
+      const response = await fetch('/api/gift-auth', { credentials: 'same-origin', cache: 'no-store' });
+      if (!response.ok) throw new Error('Không kiểm tra được quyền gửi thư');
+      const payload = await response.json() as { authenticated?: boolean };
+      if (!payload.authenticated) {
+        setSendStage('needs-auth');
+        setShowGiftAuth(true);
+        return;
+      }
+      await submitGiftReply();
+    } catch (error) {
+      setSendStage('idle');
+      setSendError(error instanceof Error ? error.message : 'Lỗi kết nối');
     }
+  };
+
+  const submitGiftReply = async () => {
+    if (isSending) return;
     setIsSending(true);
+    setSendStage(selectedFile && !uploadedImageUrl ? 'uploading' : 'saving');
+    setSendError('');
     let imageUrl: string | null = uploadedImageUrl;
     try {
       if (selectedFile && !imageUrl) {
-        imageUrl = await uploadPhoto(selectedFile);
+        imageUrl = await uploadPhoto(selectedFile, 'gift');
         setUploadedImageUrl(imageUrl);
       }
-      const { error } = await supabase.from('love_messages').insert({
-        sender_name: (senderName.trim() || 'Bà Chã').slice(0, 60),
-        message: replyMessage.trim().slice(0, 2000),
-        mood: selectedMood.slice(0, 100),
-        image_url: imageUrl,
-        submission_id: submissionId,
-        session_id: getSessionId(),
+      setSendStage('saving');
+      const response = await fetch('/api/gift-reply', {
+        method: 'POST',
+        credentials: 'same-origin',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          sender_name: (senderName.trim() || 'Bà Chã').slice(0, 60),
+          message: replyMessage.trim().slice(0, 2000),
+          mood: selectedMood.slice(0, 100),
+          image_url: imageUrl,
+          submission_id: submissionId,
+          session_id: getSessionId(),
+        }),
       });
-      if (error && error.code !== '23505') throw error;
+      if (!response.ok) {
+        const errorPayload = await response.json().catch(() => ({})) as { error?: string };
+        if (response.status === 401) { setSendStage('needs-auth'); setShowGiftAuth(true); throw new Error('Phiên gửi thư hết hạn. Em xác nhận lại nha.'); }
+        throw new Error(errorPayload.error || 'Gửi lời nhắn chưa thành công');
+      }
+      setSendStage('success');
+      void recordLoveEvent('reply_sent');
+      localStorage.setItem('bap_kunn_completed_20102026', 'true');
+      confetti({ particleCount: 100, spread: 85, origin: { y: 0.5 } });
+      onSendSuccess(imageUrl);
     } catch (error) {
       console.error('Gửi lời nhắn thất bại:', error);
+      setSendStage(current => current === 'needs-auth' ? current : 'idle');
       setSendError(error instanceof Error ? `Chưa gửi được: ${error.message}` : 'Lỗi kết nối, Em thử lại nha!');
+    } finally {
       setIsSending(false);
-      return;
     }
-    setIsSending(false);
-    // Lời nhắn là bản ghi chính. Event phụ không được chặn màn kết nếu lỗi mạng.
-    void recordLoveEvent('reply_sent');
-    localStorage.setItem('bap_kunn_completed_20102026', 'true');
-    confetti({ particleCount: 100, spread: 85, origin: { y: 0.5 } });
-    onSendSuccess(imageUrl);
-    return;
+  };
 
+  const authorizeAndSend = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (authorizing) return;
+    setAuthorizing(true);
+    setSendStage('authorizing');
+    setAuthError('');
+    try {
+      const response = await fetch('/api/gift-auth', {
+        method: 'POST', credentials: 'same-origin',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ password: giftPassword }),
+      });
+      if (!response.ok) {
+        const result = await response.json().catch(() => ({})) as { error?: string };
+        throw new Error(result.error || 'Chưa xác thực được');
+      }
+      setGiftPassword('');
+      setShowGiftAuth(false);
+      await submitGiftReply();
+    } catch (error) {
+      setSendStage('needs-auth');
+      setAuthError(error instanceof Error ? error.message : 'Lỗi kết nối');
+    } finally {
+      setAuthorizing(false);
+    }
   };
 
   // Copy standard reply
@@ -173,6 +241,22 @@ export const GiftAndReplySection: React.FC<GiftAndReplySectionProps> = ({
 
   return (
     <section id="gift-and-reply-section" className="py-6 sm:py-10 px-4 sm:px-6 max-w-5xl mx-auto z-20 animate-fade-in">
+      {showGiftAuth && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-slate-900/60 backdrop-blur-sm p-4" role="dialog" aria-modal="true" aria-labelledby="gift-auth-heading">
+          <form onSubmit={authorizeAndSend} className="w-full max-w-sm rounded-3xl border-2 border-rose-200 bg-white p-6 shadow-2xl space-y-4">
+            <div className="text-center space-y-2">
+              <span className="text-3xl">🔐💌</span>
+              <h3 id="gift-auth-heading" className="text-xl font-bold text-rose-700">Cho Chibi xin mật mã nhỏ nha!</h3>
+              <p className="text-sm text-slate-600">Xác nhận để gửi lời nhắn và ảnh an toàn đến Anh. Nội dung Em vừa viết vẫn được giữ nguyên.</p>
+            </div>
+            <label className="block text-sm font-medium text-slate-700" htmlFor="gift-confirm-password">Mật khẩu gửi quà</label>
+            <input id="gift-confirm-password" type="password" autoComplete="off" value={giftPassword} onChange={e => setGiftPassword(e.target.value)} required minLength={12} className="w-full rounded-xl border border-rose-200 bg-rose-50 p-3 outline-none focus:border-rose-500" placeholder="Mật khẩu riêng..." />
+            {authError && <p role="alert" className="text-sm text-red-600">{authError}</p>}
+            <button type="submit" disabled={authorizing} className="w-full rounded-xl bg-rose-500 py-3 font-bold text-white disabled:opacity-60">{authorizing ? sendStageText[sendStage] : 'Xác nhận & Gửi Anh 💗'}</button>
+            <button type="button" onClick={() => { setShowGiftAuth(false); setGiftPassword(''); setAuthError(''); setSendStage('idle'); }} className="w-full text-sm text-slate-500 py-2">Quay lại viết lời nhắn</button>
+          </form>
+        </div>
+      )}
       {/* Section Header */}
       <div className="text-center mb-6">
         <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-gradient-to-r from-pink-100 to-rose-100 border border-rose-300/80 shadow-md text-rose-800 text-xs sm:text-sm font-semibold mb-2">
@@ -334,16 +418,20 @@ export const GiftAndReplySection: React.FC<GiftAndReplySectionProps> = ({
                 <div className="flex flex-col sm:flex-row gap-2 pt-1">
                   <button
                     type="submit"
-                    disabled={isSending}
+                    disabled={isSending || sendStage === 'checking' || sendStage === 'authorizing' || showGiftAuth}
+                    aria-busy={isSending || sendStage === 'checking' || sendStage === 'authorizing'}
                     className="flex-1 py-2.5 px-3 rounded-xl bg-gradient-to-r from-rose-500 to-pink-500 hover:from-rose-600 hover:to-pink-600 text-white font-medium text-xs sm:text-sm shadow-md shadow-rose-300 transition-all flex items-center justify-center gap-2 cursor-pointer active:scale-98"
                   >
                     <Send size={15} />
-                    <span>{isSending ? 'Tình yêu đang soạn thư... 💌' : 'Gửi lời nhắn cho anh 💌'}</span>
+                    <span>{sendStageText[sendStage]}</span>
                   </button>
 
 
                 </div>
 
+                {sendStage !== 'idle' && sendStage !== 'success' && (
+                  <p role="status" aria-live="polite" className="text-center text-xs text-rose-600">{sendStageText[sendStage]}</p>
+                )}
                 {justSent && (
                   <div className="p-3 text-xs bg-emerald-50 text-emerald-800 border border-emerald-200 rounded-xl text-center flex flex-col items-center justify-center gap-1 animate-fade-in shadow-xs">
                     <div className="flex items-center gap-1.5 font-bold">
