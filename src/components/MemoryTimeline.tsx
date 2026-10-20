@@ -50,7 +50,7 @@ export const MemoryTimeline: React.FC<{ archived?: boolean }> = ({
       aria-label="Đếm ngược đến hết ngày 20 tháng 10 năm 2026"
     >
       <p className="flex items-center justify-center gap-2 text-rose-600 font-semibold text-sm mb-3">
-        <Clock3 size={17} /> Món quà còn mở đến hết 20/10/2026 (giờ Việt Nam)
+        <Clock3 size={17} />
       </p>
       <div className="grid grid-cols-4 gap-1.5 sm:gap-2">
         {units.map((unit) => (
@@ -68,8 +68,10 @@ export const MemoryTimeline: React.FC<{ archived?: boolean }> = ({
         ))}
       </div>
       <p className="mt-3 text-xs sm:text-sm leading-relaxed text-slate-600">
-        Hết 20/10, Chibi sẽ cất kỷ niệm của anh và Bà Chã vào hộp nhỏ này. Chibi chúc
-        Cô Chủ và anh Bắp luôn thương nhau, rồi còn nhiều chuyện vui để kể tiếp nha! 💗
+        Chibi sẽ cất kỷ niệm của anh và Bà Chã vào hộp nhỏ này. 
+        Cô Chủ chụp lại để đòi quà Ông Chã nhé.
+        Chibi chúc
+        Cô Chủ và anh Bắp luôn yêu thương nhau, rồi còn nhiều chuyện vui để kể tiếp nha! 💗
       </p>
     </div>
   );
